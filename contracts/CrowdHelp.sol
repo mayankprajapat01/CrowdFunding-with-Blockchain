@@ -160,7 +160,7 @@ contract Campaign{
         }
     }
 
-     function endCampaignAndCredit() public isCreator() payable {
+    function endCampaignAndCredit() public isCreator() payable {
         // perform validation..
         require(state == State.SUCCESS, 'Goal not reached, amount cannot be withdrawn. Please abort to refund to backers');
         require(block.timestamp < deadline, 'Campaign cannot be ended, deadline not reached.');
