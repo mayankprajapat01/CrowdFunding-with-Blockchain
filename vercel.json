@@ -1,0 +1,8 @@
+{
+    "build": {
+      "env": {
+        "YARN_PRODUCTION": "true"
+      }
+    }
+  }
+  
