@@ -187,7 +187,7 @@ Ready with understanding and basic setup.
 |                          [Infura](https://www.infura.io/) | To deploy smart-contract to remotely in `Goerli` test network.                                       |
 |                              [Yarn](https://yarnpkg.com/) | A package manager, to add & remove packages for the project as per need.                             |
 
-# How to run _(locally & remotely)_? 🏃‍♂️
+# How to run ? 🏃‍♂️
 
 ## Pre-requisites 🛠️
 
@@ -214,48 +214,13 @@ _(ONLY for running remotely)_
 3. Now click on **Export private Key** and enter your metamask password.
 4. Get this and paste in `.env.local` file as `PRIVATE_KEY`.
 
-## Running locally _(with **hardhat**)_ 🏃‍♂️
-
-_(Run these commands by being in project root directory)_
-
-- Install the project dependencies
-  ```sh
-  yarn dev
-  ```
-- Run local hardhat network
-  ```sh
-  npx hardhat node
-  ```
-  _Make changes to the smart-contract if needed._
-- Compile the smart contract via
-  ```sh
-  npx hardhat compile
-  ```
-- Deploy the smart contract
-  ```sh
-  npx hardhat run scripts/deploy.js --network localhost
-  ```
-- This outputs the message as..
-  ```
-  Contract deployed to address: <Hex_address>
-  ```
-- Paste this address at `utils/contract/crowdHelp.js` as value for `crowdHelpContractAddress` variable.
-
-- Run the frontend
-  ```sh
-   yarn dev
-  ```
-  - This will run server on `127.0.0.1:5173`
-
 ## Running remotely 🏃‍♂️
 
 - Follow the above steps. Now just change the network as `goerli_testnet` while deploying.
   ```
-   npx hardhat run scripts/deploy.js --network goerli_testnet
+  yarn install
+  yarn dev
   ```
-- To run on different test-net..
-  - Use different URL in `hardhat.config.js`.
-
 # References taken ⚓
 
 ## for understanding of crowdfunding idea with blockchain & developing smart-contract
