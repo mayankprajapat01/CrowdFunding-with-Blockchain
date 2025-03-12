@@ -1,37 +1,23 @@
 import {
-  ErrorRounded,
-  LocalConvenienceStoreOutlined,
-} from "@mui/icons-material";
-import {
   Button,
   Container,
   TextField,
   Typography,
   styled,
-  Avatar,
-  Link,
   Box,
   Grid,
   FormControlLabel,
   Checkbox,
 } from "@mui/material";
-import React, { useEffect } from "react";
+import React, { useState } from "react";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import { LoadingButton } from "@mui/lab";
-// local imports...
 import NavBar from "../../components/NavBar";
-
-// service imports..
-import axios from "axios";
+import { useWallet } from "use-wallet";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import moment from "moment";
-
-// Wallet connection..
-import { useWallet } from "use-wallet";
-
-// smart-contract interaction -- for campaign creation..
 import crowdHelp from "../../../utils/contract/crowdHelp";
 import web3 from "../../../utils/web3";
 
@@ -41,60 +27,88 @@ function FillCampaignDetails() {
   const wallet = useWallet();
   const navigate = useNavigate();
 
-  // hooks for getting form data..
+  // Form handling
   const {
     handleSubmit,
     register,
     formState: { isSubmitting, errors },
+    setValue,
+    watch,
   } = useForm({
     mode: "onChange",
   });
-  const [data, setData] = React.useState("");
-  const [error, setError] = React.useState("");
 
-  // hooks to handle acknowledgements..
-  // hooks..
-  const [responseMsg, setResponseMsg] = React.useState(""); // to display error messages.
-  const [showResponse, setShowResponse] = React.useState(false); // To know whether error occured. ⁉ why not use length of error message
-  const [responseSeverity, setResponseSeverity] = React.useState("error");
+  const [error, setError] = useState("");
+  const [responseMsg, setResponseMsg] = useState("");
+  const [showResponse, setShowResponse] = useState(false);
+  const [responseSeverity, setResponseSeverity] = useState("error");
 
-  // helpers..
+  // Image upload state
+  const [imageUrl, setImageUrl] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Handle image upload to Cloudinary
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "crowdfund"); // Replace with your upload preset
+    formData.append("cloud_name", "dnht1km0x"); // Replace with your cloud name
+
+    try {
+      const response = await fetch(
+        "https://api.cloudinary.com/v1_1/dnht1km0x/image/upload", // Replace with your cloud name
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+      if (data.secure_url) {
+        setImageUrl(data.secure_url);
+        setValue("bannerUrl", data.secure_url); // Set the URL in the form
+        console.log("Image uploaded successfully:", data.secure_url);
+      } else {
+        console.error("Failed to upload image:", data);
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Handle form submission
   async function handleFilledCampaignDetails(data) {
-    console.log("ABout to print data");
-    console.log(data);
-    console.log("deadline: " + data.deadlineDate + " " + data.deadlineTime);
-    const timestamp = moment(
-      data.deadlineDate + " " + data.deadlineTime,
-      "YYYY-MM-DD HH:mm"
-    ).valueOf();
-    console.log(timestamp);
-    console.log("timestamp printed");
+    console.log("Form Data:", data);
 
     try {
       const accounts = await web3.eth.getAccounts();
-      // Create campaign by taking all the details..
       await crowdHelp.methods
         .createCampaign(
           data.title,
           data.description,
           web3.utils.toWei(data.minContribAmount, "ether"),
           web3.utils.toWei(data.ethRaised, "ether"),
-          timestamp,
+          moment(
+            data.deadlineDate + " " + data.deadlineTime,
+            "YYYY-MM-DD HH:mm"
+          ).valueOf(),
           data.bannerUrl
         )
         .send({
           from: accounts[0],
         });
 
-      // After successful creation..
-      ///// REQUIRED: Find way to get the created campaign address, so that, can navigate to that page.
-      navigate("/"); // navigate to home page
+      navigate("/"); // Navigate to home page after successful creation
     } catch (err) {
-      // upon error.. be on the same page and show the error.
       setError(err.message);
-      console.log(err);
-    } finally {
-      console.log("job done");
+      console.error(err);
     }
   }
 
@@ -139,11 +153,7 @@ function FillCampaignDetails() {
   return (
     <>
       <NavBar />
-      <StyledContainer
-        sx={{
-          width: "80%",
-        }}
-      >
+      <StyledContainer sx={{ width: "80%" }}>
         <StyledDivLayout>
           <StyledDivPaper>
             <Typography
@@ -154,7 +164,8 @@ function FillCampaignDetails() {
             >
               Campaign Details
             </Typography>
-            {/* Handle wallet connection here.. */}
+
+            {/* Wallet connection alerts */}
             {wallet.status !== "connected" ? (
               <Alert
                 sx={{ marginBottom: 2 }}
@@ -191,7 +202,7 @@ function FillCampaignDetails() {
               )
             )}
 
-            {/* For displaying errors.. */}
+            {/* Error messages */}
             {error && (
               <Alert sx={{ marginBottom: 2, marginTop: 2 }} severity="error">
                 {error}
@@ -210,18 +221,10 @@ function FillCampaignDetails() {
               </Alert>
             ) : null}
 
-            <form
-              autoComplete="on"
-              onSubmit={handleSubmit(handleFilledCampaignDetails)}
-            >
-              <Grid
-                container
-                spacing={1.5}
-                direction="row"
-                justify="center"
-                alignItems="stretch"
-              >
-                <Grid item xs={6} >
+            {/* Form */}
+            <form onSubmit={handleSubmit(handleFilledCampaignDetails)}>
+              <Grid container spacing={1.5}>
+                <Grid item xs={6}>
                   <Box display={"flex"} flexDirection="column" gap={2}>
                     <TextField
                       id="title"
@@ -239,10 +242,7 @@ function FillCampaignDetails() {
                       label="Minimum contribution amount"
                       size="small"
                       type="number"
-                      inputProps={{
-                        min: 0,
-                        step: 0.000001,
-                      }}
+                      inputProps={{ min: 0, step: 0.000001 }}
                       fullWidth
                       variant="outlined"
                       helperText="How much minimum amount you are expecting from backers?"
@@ -251,20 +251,17 @@ function FillCampaignDetails() {
                   </Box>
                 </Grid>
                 <Grid item xs={6}>
-                  <Grid styl={{ height: "70%" }}>
-                    <TextField
-                      id="description"
-                      name="description"
-                      {...register("description", { required: true })}
-                      label="Campaign Description"
-                      size="small"
-                      multiline
-                      rows={4.3}
-                      fullWidth
-                      helperText="Help people know about this campaign. Keep it simple and short."
-                      disabled={isSubmitting}
-                    />
-                  </Grid>
+                  <TextField
+                    id="description"
+                    {...register("description", { required: true })}
+                    label="Campaign Description"
+                    size="small"
+                    multiline
+                    rows={4.3}
+                    fullWidth
+                    helperText="Help people know about this campaign. Keep it simple and short."
+                    disabled={isSubmitting}
+                  />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <TextField
@@ -275,27 +272,40 @@ function FillCampaignDetails() {
                     size="small"
                     type="number"
                     helperText="Amount to be raised"
-                    inputProps={{
-                      // min: 0.00000001,
-                      step: 0.00001,
-                    }}
+                    inputProps={{ step: 0.00001 }}
                     disabled={isSubmitting}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField
-                    id="bannerUrl"
-                    {...register("bannerUrl", { required: true })}
-                    label="Banner Image URL"
-                    type="url"
-                    size="small"
-                    fullWidth
-                    title="This image will be shown as a banner"
-                    helperText="Preferably from unsplash.com, flaticon.com, pexels.com."
-                    disabled={isSubmitting}
-                  />
+                  <Box display="flex" flexDirection="column" gap={2}>
+                    <input
+                      accept="image/*"
+                      style={{ display: "none" }}
+                      id="upload-button"
+                      type="file"
+                      onChange={handleImageUpload}
+                    />
+                    <label htmlFor="upload-button">
+                      <Button
+                        variant="contained"
+                        component="span"
+                        disabled={isUploading}
+                      >
+                        {isUploading ? "Uploading..." : "Upload Banner Image"}
+                      </Button>
+                    </label>
+                    <TextField
+                      id="bannerUrl"
+                      {...register("bannerUrl", { required: true })}
+                      label="Or Paste Banner Image URL"
+                      type="url"
+                      size="small"
+                      fullWidth
+                      helperText="Preferably from unsplash.com, flaticon.com, pexels.com."
+                      disabled={isSubmitting}
+                    />
+                  </Box>
                 </Grid>
-
                 <Grid item xs={12} sm={6}>
                   <Box sx={{ padding: 0, margin: 0 }}>
                     <Typography variant="caption" color="GrayText">
@@ -330,10 +340,7 @@ function FillCampaignDetails() {
                     </Typography>
                   </Box>
                 </Grid>
-
                 <Grid item xs={12} sm={6}>
-                  {/* Just to be aligned with the date&time. */}
-                  <Typography variant="caption">&nbsp;</Typography>
                   <TextField
                     required
                     id="walletAddress"
@@ -341,10 +348,7 @@ function FillCampaignDetails() {
                     label="Wallet Address"
                     fullWidth
                     value={wallet.account}
-                    inputProps={{
-                      readOnly: "read-only",
-                    }}
-                    title="Read-only value"
+                    inputProps={{ readOnly: true }}
                     size="small"
                     helperText={
                       wallet.status === "connected"
@@ -354,7 +358,6 @@ function FillCampaignDetails() {
                     disabled={isSubmitting}
                   />
                 </Grid>
-
                 <Grid item xs={12}>
                   <FormControlLabel
                     control={

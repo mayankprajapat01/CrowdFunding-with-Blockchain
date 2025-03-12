@@ -28,6 +28,8 @@ import { LoadingButton } from "@mui/lab";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import Link from "@mui/material/Link";
+
 
 // Wallet connection..
 import { useWallet } from "use-wallet";
@@ -93,7 +95,11 @@ function NavBar() {
             },
           }}
         >
-          CrowdHelp
+         <Link href="/" component="a" sx={{ textDecoration: "none", color: "inherit" }}>
+  CrowdHelp
+</Link>
+
+          
         </Typography>
         <StorefrontIcon
           sx={{
